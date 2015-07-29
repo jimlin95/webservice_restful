@@ -108,13 +108,7 @@ static int handle_request(struct mg_connection *conn)
     else 
     {
         printf("else %d\n",__LINE__);
-        mg_printf_data(conn, "%s",
-                   "<html><body>Upload example."
-                   "<form method=\"POST\" action=\"/upload\" "
-                   "  enctype=\"multipart/form-data\">"
-                   "<input type=\"file\" name=\"file\" /> <br/>"
-                   "<input type=\"submit\" value=\"Upload\" />"
-                   "</form></body></html>");
+        mg_printf_data(conn, "%s","Not Support");
         return MG_TRUE;   // Tell mongoose to close this connection
     }
 }
