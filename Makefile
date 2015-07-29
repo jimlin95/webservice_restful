@@ -3,7 +3,7 @@
 
 PROG = app
 CFLAGS = -W -Wall -lm -lsqlite3 -I../mongoose/ -I ../cJSON/ -I ../sqlite/ -pthread -g -O0 -L../sqlite/.libs $(CFLAGS_EXTRA)
-SOURCES = $(PROG).c ../mongoose/mongoose.c ../cJSON/cJSON.c 
+SOURCES = $(PROG).c ../mongoose/mongoose.c ../cJSON/libcjson.a
 
 $(PROG): $(SOURCES)
 	$(CC) -o $(PROG) $(SOURCES) $(CFLAGS)

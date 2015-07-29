@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "mongoose.h"
 #include "cJSON.h"
@@ -45,7 +46,6 @@ static int handle_request(struct mg_connection *conn)
     char *title;
     char *description;
     int completed;
-    int ret=0;
     if (!strcmp(conn->request_method, "POST") && !strncmp(conn->uri, "/api/v1",strlen("/api/v1"))) 
     {
         printf("api v1\n");
@@ -53,7 +53,7 @@ static int handle_request(struct mg_connection *conn)
         if(json_data == NULL)
         {
             printf("Error json data: NULL\n");
-            return NULL;
+            return MG_TRUE;   // Tell mongoose to close this connection
         }
         printf("input json data: %s\n", json_data);
         root = cJSON_Parse(json_data);
@@ -62,7 +62,7 @@ static int handle_request(struct mg_connection *conn)
         completed = cJSON_GetObjectItem(root,"completed")->valueint; 
         printf("title = %s,description = %s, completed = %d\n",title,description,completed);
         json = cJSON_Print(root);
-        ret = write_json_result(conn, 0, json);
+        write_json_result(conn, 0, json);
         free(json_data);
         return MG_TRUE;   // Tell mongoose to close this connection
     }
@@ -86,7 +86,7 @@ static int handle_request(struct mg_connection *conn)
                 return MG_TRUE;   // Tell mongoose to close this connection
             }
             sprintf(sql,"SELECT * FROM Cars WHERE Id = %d",id);
-            rc = sqlite3_exec(db, buf, callback, response_buff, &err_msg);
+            rc = sqlite3_exec(db,sql, callback, response_buff, &err_msg);
         
             if (rc != SQLITE_OK ) {
                 
@@ -101,8 +101,14 @@ static int handle_request(struct mg_connection *conn)
             else
             {
                 mg_printf_data(conn,"%s",response_buff);
+                return MG_TRUE;   // Tell mongoose to close this connection
             }
             sqlite3_close(db);
+        }
+        else
+        {
+            mg_printf_data(conn, "%s","Not Support");
+            return MG_TRUE;   // Tell mongoose to close this connection
         }
     }
     else 
@@ -161,16 +167,16 @@ static int event_handler(struct mg_connection *conn, enum mg_event ev)
     switch (ev) 
     {
         case MG_AUTH:     
-            printf("event_handler , MG_AUTH\n");
+            //printf("event_handler , MG_AUTH\n");
             return MG_TRUE;
         case MG_REQUEST:  
-            printf("event_handler , MG_REQUEST\n");
+            //printf("event_handler , MG_REQUEST\n");
             return handle_request(conn);
         case MG_RECV:     
-            printf("event_handler , MG_RECV\n");
+            //printf("event_handler , MG_RECV\n");
             return handle_recv(conn);
         case MG_CLOSE:    
-            printf("event_handler , MG_CLOSE\n");
+            //printf("event_handler , MG_CLOSE\n");
             return handle_close(conn);
         default:          
          //   printf("event_handler , default\n");
@@ -257,13 +263,13 @@ int db_init(void)
 int main(void)
 {
     struct mg_server *server = mg_create_server(NULL, event_handler);
-    printf("%s\n", sqlite3_libversion()); 
-    db_init();
+    //printf("%s\n", sqlite3_libversion()); 
+    //db_init();
     //db_insert();
     mg_set_option(server, "document_root", ".");
     mg_set_option(server, "listening_port", "8080");
 
-    printf("APP start\n");
+    printf("web service is working now\n");
     for (;;) 
     {
         mg_poll_server(server, 1000);  // Infinite loop, Ctrl-C to stop
