@@ -2,8 +2,8 @@
 # All rights reserved
 
 PROG = app
-CFLAGS = -W -Wall -lm -I../mongoose/ -I ../cJSON/ -pthread -g -O0 $(CFLAGS_EXTRA)
-SOURCES = $(PROG).c ../mongoose/mongoose.c ../cJSON/cJSON.c
+CFLAGS = -W -Wall -lm -lsqlite3 -I../mongoose/ -I ../cJSON/ -I ../sqlite/ -pthread -g -O0 -L../sqlite/.libs $(CFLAGS_EXTRA)
+SOURCES = $(PROG).c ../mongoose/mongoose.c ../cJSON/cJSON.c 
 
 $(PROG): $(SOURCES)
 	$(CC) -o $(PROG) $(SOURCES) $(CFLAGS)
