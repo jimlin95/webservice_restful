@@ -15,7 +15,7 @@ char * get_post_data(struct mg_connection *conn)
     const char *cl;
 
     cl = mg_get_header(conn, "Content-Length");
-    if (!strcmp(conn->request_method, "POST") && cl != NULL)
+    if ((!strcmp(conn->request_method, "POST") || (!strcmp(conn->request_method, "PUT"))&& cl != NULL))
     {
         buf_len = atoi(cl)+1;
         buff = malloc(buf_len);
@@ -157,7 +157,7 @@ static int handle_request(struct mg_connection *conn)
             return MG_TRUE;   // Tell mongoose to close this connection
         }
     }
-    if (!strcmp(conn->request_method, "DELETE") && !strncmp(conn->uri, "/api/v1/cars/",strlen("/api/v1/cars/"))) 
+    else if (!strcmp(conn->request_method, "DELETE") && !strncmp(conn->uri, "/api/v1/cars/",strlen("/api/v1/cars/"))) 
     {
         char sql[100];
         int id;
@@ -190,6 +190,65 @@ static int handle_request(struct mg_connection *conn)
             sqlite3_close(db);
 
             mg_printf_data(conn, "Delete %d record from Cars table",id);
+            return MG_TRUE;   // Tell mongoose to close this connection
+        }
+    }
+    else if (!strcmp(conn->request_method, "PUT") && !strncmp(conn->uri, "/api/v1/cars/",strlen("/api/v1/cars/"))) 
+    {
+        char sql[100];
+        int id;
+        sqlite3 *db;
+        char *err_msg = 0; 
+        char *json_data;
+        sscanf(conn->uri,"/api/v1/cars/%d",&id);
+        if (id != 0)
+        {
+            json_data = get_post_data(conn);
+            if(json_data == NULL)
+            {
+                printf("Error json data: NULL\n");
+                mg_printf_data(conn, "%s","Error jason data:NULL");
+                free(json_data);
+                return MG_TRUE;   // Tell mongoose to close this connection
+            }
+            printf("input json data: %s\n", json_data);
+            root = cJSON_Parse(json_data);
+            if (root == NULL)
+            {
+                mg_printf_data(conn, "%s","Error jason data:Wrong format");
+                free(json_data);
+                return MG_TRUE;
+            }
+            char *name;
+            int price;
+            name = cJSON_GetObjectItem(root,"Name")->valuestring;
+            price = cJSON_GetObjectItem(root,"Price")->valueint;
+            printf("id = %d,Name = %s, Price=%d",id,name,price);
+            int rc = sqlite3_open("quanta.db", &db);
+            if (rc != SQLITE_OK) 
+            {
+            
+                fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+                sqlite3_close(db);        
+                return MG_TRUE;   // Tell mongoose to close this connection
+            }
+            char sql[100];
+            sprintf(sql,"UPDATE Cars SET Name = '%s', Price = %d WHERE ID = %d;",name,price,id);
+            rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+            if (rc != SQLITE_OK ) {
+        
+                fprintf(stderr, "SQL error: %s\n", err_msg);
+        
+                sqlite3_free(err_msg);        
+                sqlite3_close(db);
+        
+                return MG_TRUE;   // Tell mongoose to close this connection
+            } 
+            sqlite3_free(err_msg);        
+            sqlite3_close(db);
+
+            mg_printf_data(conn, "UPDATE Cars table %d record",id);
+            free(json_data);
             return MG_TRUE;   // Tell mongoose to close this connection
         }
     }
