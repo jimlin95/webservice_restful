@@ -151,15 +151,6 @@ static int handle_request(struct mg_connection *conn)
             }
             sqlite3_close(db);
         }
-        else if(!strncmp(conn->uri,"/api/v1/versions",strlen("/api/v1/versions")))
-        {
-            FILE *fp;
-            char commandout[100];
-            fp = popen("cat /proc/version", "r");
-            fgets(commandout, 100, fp); 
-            mg_printf_data(conn,"%s",commandout);
-            return MG_TRUE;   // Tell mongoose to close this connection
-        }
         else
         {
             mg_printf_data(conn, "%s","Not Support");
@@ -260,54 +251,6 @@ static int handle_request(struct mg_connection *conn)
             free(json_data);
             return MG_TRUE;   // Tell mongoose to close this connection
         }
-    }
-    else if (!strcmp(conn->request_method, "PUT") && !strncmp(conn->uri, "/api/v1/led/",strlen("/api/v1/led/"))) 
-    {
-        json_data = get_post_data(conn);
-        if(json_data == NULL)
-        {
-            printf("Error json data: NULL\n");
-            mg_printf_data(conn, "%s","Error jason data:NULL");
-            free(json_data);
-            return MG_TRUE;   // Tell mongoose to close this connection
-        }
-        printf("input json data: %s\n", json_data);
-        root = cJSON_Parse(json_data);
-        if (root == NULL)
-        {
-            mg_printf_data(conn, "%s","Error jason data:Wrong format");
-            free(json_data);
-            return MG_TRUE;
-        }
-        char *led;
-        char *status;
-        led = cJSON_GetObjectItem(root,"LED")->valuestring;
-        status = cJSON_GetObjectItem(root,"status")->valuestring;
-        printf("led = %s,status= %s",led,status);
-        if (!strcmp(led,"red"))
-        {
-            if(!strcmp(status,"on"))
-            {
-                system("echo 1 >/sys/devices/platform/80860F41:04/i2c-5/5-0034/\
-                       dollar_cove_charger/power_supply/dollar_cove_charger/red_led_switch");
-            }
-            else
-                system("echo 0 >/sys/devices/platform/80860F41:04/i2c-5/5-0034/dollar_cove_charger/power_supply/dollar_cove_charger/red_led_switch");
-        }
-        else if(!strcmp(led,"green"))
-        {
-            if(!strcmp(status,"on"))
-            {
-                system("echo 1 >/sys/devices/platform/80860F41:04/i2c-5/5-0034/dollar_cove_charger/power_supply/dollar_cove_charger/green_led_switch");
-            }
-            else
-                system("echo 0 >/sys/devices/platform/80860F41:04/i2c-5/5-0034/dollar_cove_charger/power_supply/dollar_cove_charger/green_led_switch");
-        }
-     
-            mg_printf_data(conn, "Turn %s %s",status,led);
-            free(json_data);
-            return MG_TRUE;   // Tell mongoose to close this connection
-
     }
     else 
     {
